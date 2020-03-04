@@ -9,14 +9,14 @@ device_address = None
 
 if __name__ == '__main__':
     done_today = False
-    polling_time = sys.argv[1]
+    polling_time = int(sys.argv[1])
     hour, minute = sys.argv[2].split(":")
     device_address = sys.argv[3]
     bridge_ip = sys.argv[4]
 
     while True:
         time.sleep(polling_time)
-        p = subprocess.Popen("arp-scan -l -r 3 | grep xx:xx:xx:xx:xx:xx", stdout=subprocess.PIPE, shell=True)
+        p = subprocess.Popen("sudo arp-scan -l -r 3 | grep " + device_address, stdout=subprocess.PIPE, shell=True)
         (output, err) = p.communicate()
         p_status = p.wait()
         if output and not done_today:
