@@ -1,36 +1,41 @@
 import subprocess
+import time
+import sys
 from phue import Bridge
 from datetime import datetime, timedelta
 
-done_today = False
-lights = [  {‘hue’: 25574,‘sat’: 254,‘bri’: 254, ‘transitiontime’: 3 , ‘on’: True},
-            {‘hue’: 25574,‘sat’: 254,‘bri’: 254, ‘transitiontime’: 3 , ‘on’: True},
-            {‘hue’: 25574,‘sat’: 254,‘bri’: 254, ‘transitiontime’: 3 , ‘on’: True}]
+bridge_ip = None
+device_address = None
 
 if __name__ == '__main__':
+    done_today = False
+    polling_time = sys.argv[1]
+    hour, minute = sys.argv[2].split(":")
+    device_address = sys.argv[3]
+    bridge_ip = sys.argv[4]
+
     while True:
-        sleep(10)
+        time.sleep(polling_time)
         p = subprocess.Popen("arp-scan -l -r 3 | grep xx:xx:xx:xx:xx:xx", stdout=subprocess.PIPE, shell=True)
         (output, err) = p.communicate()
         p_status = p.wait()
         if output and not done_today:
-            print "Smartphone is connected to the network."
+            print("Device is connected to the network.")
             if b is None:
-                b = Bridge('Bridge IP Address')
+                b = Bridge(bridge_ip)
+                print("Connecting to bridge on ip " + bridge_ip + ". Press button on bridge now.")
                 b.connect()
-            for light in lights:
-                b.set_light(1 , {‘hue’: 25574,‘sat’: 254,‘bri’: 254, ‘transitiontime’: 3 , ‘on’: True})
+            b.set_light(['DEVICE1', 'DEVICE2'] , 'on', True)
             done_today = True
             output = None
             
         elif done_today:
-            print "Sleeping until tomorrow..."
+            print("Sleeping until tomorrow...")
             done_today= False
-            b.disconnect()
-            sleep(calculatteTimeDelta())
+            time.sleep(calculatteTimeDelta(hour, minute))
             
             
-def calculatteTimeDelta():
+def calculatteTimeDelta(hour, minute):
     now = datetime.now()
-    tomorrow = now.replace(hour=17, minute=30, second=0, microsecond=0)
+    tomorrow = now.replace(hour=hour, minute=minute, second=0, microsecond=0)
     return (timedelta(hours=24) - (now - tomorrow)).total_seconds() % (24 * 3600)
