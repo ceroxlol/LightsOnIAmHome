@@ -3,6 +3,7 @@ import time
 import sys
 from phue import Bridge
 from datetime import datetime, timedelta
+from yeelight import Bulb
 
 bridge_ip = None
 device_address = None
@@ -22,6 +23,7 @@ if __name__ == '__main__':
 	
     hour = int(hour)
     minute = int(minute)
+    yeelight_bulb = Bulb("0.0.0.0")
 
     while True:
         res = subprocess.call(['ping', '-c', '3', device_address])
@@ -31,7 +33,10 @@ if __name__ == '__main__':
                 b = Bridge(bridge_ip)
                 print("Connecting to bridge on ip " + bridge_ip + ". Press button on bridge now.")
                 b.connect()
+            # Turn on hue lights
             b.set_light(['DEVICE1', 'DEVICE2'] , 'on', True)
+            # Turn on yeelights
+            yeelight_bulb.turn_on()
             done_today = True
             
         elif done_today:

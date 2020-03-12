@@ -7,8 +7,10 @@ Small python script for scanning after a phone device connected to the wifi. The
 - MAC address of your device.
 - Install arp-scan for scanning your lan environment. 
 	`sudo apt-get install arp-scan`
-- Install the phue library.
+- Install philips hue library.
 	`pip3 install phue`
+- Install yeelight library.
+	`pip3 install yeelight`
 
 ### Setup
 You need to fill in some parameters first, before you can use this script.
