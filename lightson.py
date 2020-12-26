@@ -1,47 +1,111 @@
 import subprocess
 import time
 import sys
+from sun_timer import SunTimer
+import pickle
+import phue
+import re
 from phue import Bridge
 from datetime import datetime, timedelta
 from yeelight import Bulb
 
-bridge_ip = None
-device_address = None
-b = None
+def main():
+    config = read_conf()
+    if config is None:
+        print("Please supply a valid config.")
+        exit(0)
+    polling_time = config['polling_time']
+    device_addresses = config['device_addresses']
+    light_names = config['light_names']
 
-def calculateTimeDelta(hour, minute):
-    now = datetime.now()
-    tomorrow = now.replace(hour=hour, minute=minute, second=0, microsecond=0)
-    return (timedelta(hours=24) - (now - tomorrow)).total_seconds() % (24 * 3600)
-
-if __name__ == '__main__':
-    done_today = False
-    polling_time = int(sys.argv[1])
-    hour, minute = sys.argv[2].split(":")
-    device_address = sys.argv[3]
-    bridge_ip = sys.argv[4]
+    bridge = connect_bridge(config['bridge_ip'])
 	
-    hour = int(hour)
-    minute = int(minute)
     yeelight_bulb = Bulb("0.0.0.0")
 
+    sun_timer = SunTimer()
+
     while True:
-        res = subprocess.call(['ping', '-c', '3', device_address])
-        if res == 0 and not done_today:
-            print("Device is connected to the network.")
-            if b is None:
-                b = Bridge(bridge_ip)
-                print("Connecting to bridge on ip " + bridge_ip + ". Press button on bridge now.")
-                b.connect()
+        device_present = ping_devices(device_addresses)
+        if device_present:
             # Turn on hue lights
-            b.set_light(['DEVICE1', 'DEVICE2'] , 'on', True)
+            if sun_timer.is_night():
+                print("It's night and you got home :)")
+                bridge.set_light(light_names.split(',') , 'on', True)
             # Turn on yeelights
-            yeelight_bulb.turn_on()
-            done_today = True
+            # yeelight_bulb.turn_on()
             
-        elif done_today:
-            done_today= False
-            print("Sleeping until tomorrow... ("+str(calculateTimeDelta(hour, minute))+" seconds)")
-            time.sleep(calculateTimeDelta(hour, minute))
         print("sleeping for " + str(polling_time) + " seconds...")
         time.sleep(polling_time)
+
+
+def read_conf():
+    try:
+        with open("conf.pkl", "rb") as conf_file:
+            return pickle.load(conf_file)
+    except FileNotFoundError:
+        print("No file found. Creating new config...")
+        return create_new_config()
+    except EOFError:
+        print("Error with the config.pkl. Exiting...")
+        exit(1)
+
+
+def create_new_config():
+    try:
+        with open("conf.pkl", "wb") as conf_file:
+            config = {}
+            print("Polling time (s): ")
+            config['polling_time'] = int(input())
+            print("Device addresses: (e.g. 192.168.0.1,192.168.0.2)")
+            config['device_addresses'] = reduce_config_element(str(input()), ip_address=True)
+            print("Light names: ")
+            config['light_names'] = reduce_config_element(str(input()))
+            print("Bridge_ip: ")
+            config['bridge_ip'] = str(input())
+
+            pickle.dump(config, conf_file)
+    except:
+        print("Oh... something went wrong?")
+        return
+
+    return config
+
+
+def reduce_config_element(elem, ip_address=False):
+    if ip_address:
+        # remove everything but a number, if it is an ipaddress
+        return re.sub(r"[^\d\.\,]", "", elem)
+    # remove whitespaces
+    return elem.replace(" ", "")
+    
+
+def ping_devices(device_addresses):
+    # 0 represents the case in which a device is present
+    #if 0 in list(map(lambda device: subprocess.call(['ping', '-c', '3', device]), device_addresses)):
+    for device_address in device_addresses.split(','):
+        if subprocess.call(['ping', '-c', '1', device_address]) == 0:
+            return True
+    return False
+
+
+def connect_bridge(bridge_ip):
+    t_end = time.time() + 30
+    message_shown = False
+    print("Connecting to bridge on ip " + bridge_ip + ". Press button on bridge now.")
+    while time.time() < t_end:
+        try:
+            bridge = Bridge(bridge_ip)
+            bridge.connect()
+            print("Connected to HUE bridge!")
+            return bridge
+        except phue.PhueRegistrationException:
+            if not message_shown:
+                print("Please press the link button on your bridge.")
+            message_shown = True
+        time.sleep(2)
+    
+    print("Link button not pressed within 30 seconds. Exiting...")
+
+
+if __name__ == '__main__':
+    main()
