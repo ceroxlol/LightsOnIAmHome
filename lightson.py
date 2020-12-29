@@ -28,8 +28,7 @@ def main():
     device_checker = DeviceChecker(ip_addresses)
 
     while True:
-        # if device_checker.device_just_connected() and sun_timer.is_night():
-        if device_checker.lights_on_I_am_home():
+        if device_checker.lights_on_I_am_home() and sun_timer.is_night():
             # Turn on hue lights
             bridge.set_light(light_names.split(',') , 'on', True)
             # Turn on yeelights
