@@ -2,6 +2,7 @@ import subprocess
 import time
 import sys
 from sun_timer import SunTimer
+from device_checker import DeviceChecker
 import pickle
 import phue
 import re
@@ -15,24 +16,25 @@ def main():
         print("Please supply a valid config.")
         exit(0)
     polling_time = config['polling_time']
-    device_addresses = config['device_addresses']
+    ip_addresses = config['ip_addresses']
     light_names = config['light_names']
 
     bridge = connect_bridge(config['bridge_ip'])
 	
-    yeelight_bulb = Bulb("0.0.0.0")
+    # yeelight_bulb = Bulb("0.0.0.0")
 
     sun_timer = SunTimer()
 
+    device_checker = DeviceChecker(ip_addresses)
+
     while True:
-        device_present = ping_devices(device_addresses)
-        if device_present:
+        # if device_checker.device_just_connected() and sun_timer.is_night():
+        if device_checker.lights_on_I_am_home():
             # Turn on hue lights
-            if sun_timer.is_night():
-                print("It's night and you got home :)")
-                bridge.set_light(light_names.split(',') , 'on', True)
+            bridge.set_light(light_names.split(',') , 'on', True)
             # Turn on yeelights
             # yeelight_bulb.turn_on()
+        device_checker.update_devices()
             
         print("sleeping for " + str(polling_time) + " seconds...")
         time.sleep(polling_time)
@@ -56,8 +58,8 @@ def create_new_config():
             config = {}
             print("Polling time (s): ")
             config['polling_time'] = int(input())
-            print("Device addresses: (e.g. 192.168.0.1,192.168.0.2)")
-            config['device_addresses'] = reduce_config_element(str(input()), ip_address=True)
+            print("IP addresses to check for: (e.g. 192.168.0.1,192.168.0.2)")
+            config['ip_addresses'] = reduce_config_element(str(input()), ip_address=True)
             print("Light names: ")
             config['light_names'] = reduce_config_element(str(input()))
             print("Bridge_ip: ")
@@ -79,15 +81,6 @@ def reduce_config_element(elem, ip_address=False):
     return elem.replace(" ", "")
     
 
-def ping_devices(device_addresses):
-    # 0 represents the case in which a device is present
-    #if 0 in list(map(lambda device: subprocess.call(['ping', '-c', '3', device]), device_addresses)):
-    for device_address in device_addresses.split(','):
-        if subprocess.call(['ping', '-c', '1', device_address]) == 0:
-            return True
-    return False
-
-
 def connect_bridge(bridge_ip):
     t_end = time.time() + 30
     message_shown = False
@@ -105,6 +98,7 @@ def connect_bridge(bridge_ip):
         time.sleep(2)
     
     print("Link button not pressed within 30 seconds. Exiting...")
+    exit(1)
 
 
 if __name__ == '__main__':
