@@ -1,26 +1,30 @@
 # LightsOnIAmHome
 
-Small python script for scanning after a phone device connected to the wifi. Then turning on the lights automatically once per day via access to the hue bridge.
+Python to automatically turn on the lights based on ip addresses for e.g. your cellphone and wether the sun is already set or not. If a certain device is connecting to your wifi and this device has been away for a longer period of time, the script automatically turns on predefined hue lamps.
 
 ### Prerequisites
 - Static IP for the hue bridge.
-- MAC address of your device.
+- IP addresses of your devices.
 - Install arp-scan for scanning your lan environment. 
 	`sudo apt-get install arp-scan`
 - Install philips hue library.
 	`pip3 install phue`
-- Install yeelight library.
+- (Optional:) Install yeelight library.
 	`pip3 install yeelight`
+- Devices need to be in the same network as your bridge.
 
 ### Setup
-You need to fill in some parameters first, before you can use this script.
-- Insert your device's mac or ip address instead of 'xx:xx:xx:xx:xx:xx'.
-- Insert the ip address of your hue bridge into bridge_ip. If you don't want to assign a static ip, feel free to call the program with the corresponding ip.
-- Fill in your Devices. If you want to only adjust one device, leave out the parenthesis. For further choices go to https://github.com/studioimaginaire/phue
-- Hand over the time in the format "HH:MM" from which the lights shall trigger for the day.
+Upon start, the script is creating a configuration file which will then be used during runtime. It will ask you for:
+- The polling time. The amount of seconds the script sleeps until it scans for your devices another time.
+- The ip addresses from the devices you want to scan for. You can set up any amount of devices you want to scan for. Of course this data is only persisted in the conf file / during runtime.
+- The names of your hue devices (the ones used in your hue app on your smartphone).
+- The (static) ip address of your hue bridge.
 
 ### Run
 The program can be run by executing
-`python3 lightson.py POLLING_TIME HH:MM [DEVICE_ADRESS] [BRIDGE_IP]`
-DEVICE_ADRESS and BRIDGE_IP are optional and my be constantly written into the python file.
-You might need to add `sudo -u YOUR_USER` to execute the program with priviledged rights as the subprocess execution needs those.
+`python3 lightson.py`
+For the first run, the script will create a configuration file. This file will be used for subsequent runs. In case you want to recreate its content, delete it and restart the script.
+Furthermore, the script will initialize the DeviceInfo object with a date set to yesterday, so as a cold start, the lights will go on even if you start the script past sunset and all your devices are already connected.
+
+### References
+For further information regarding the `phue` package, please visit https://github.com/studioimaginaire/phue
